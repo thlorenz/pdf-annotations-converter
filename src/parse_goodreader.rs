@@ -1,19 +1,13 @@
 use regex::Regex;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Item {
-    File(String),
-    Page(u32),
-    Highlight(String),
-    Underline(String),
-}
+use crate::core::ParsedItem;
 
-enum Token {
+enum ParsedToken {
     Highlight,
     Underline,
 }
 
-pub fn parse_goodreader_annotations(annotations: &str) -> Vec<Item> {
+pub fn parse_goodreader_annotations(annotations: &str) -> Vec<ParsedItem> {
     let file_rx = Regex::new(r"^File: (.+)").unwrap();
     let page_rx = Regex::new(r"^--- Page (\d+) ---").unwrap();
     let highlight_rx = Regex::new(r"^Highlight( \([^)]+\))?:").unwrap();
@@ -21,18 +15,18 @@ pub fn parse_goodreader_annotations(annotations: &str) -> Vec<Item> {
 
     let lines = annotations.lines().filter(|&x| x.len() > 0);
 
-    let mut token: Option<Token> = None;
-    let items: Vec<Item> = lines
+    let mut token: Option<ParsedToken> = None;
+    lines
         .filter_map(|line| {
             // Handling tokens we encountered on previous line
             let item = match token {
-                Some(Token::Highlight) => {
+                Some(ParsedToken::Highlight) => {
                     token = None;
-                    Some(Item::Highlight(line.to_string()))
+                    Some(ParsedItem::Highlight(line.to_string()))
                 }
-                Some(Token::Underline) => {
+                Some(ParsedToken::Underline) => {
                     token = None;
-                    Some(Item::Underline(line.to_string()))
+                    Some(ParsedItem::Underline(line.to_string()))
                 }
                 None => None,
             };
@@ -44,7 +38,7 @@ pub fn parse_goodreader_annotations(annotations: &str) -> Vec<Item> {
             if let Some(_) = file_rx.find(line) {
                 let c = file_rx.captures(line).unwrap();
                 let s: String = c.get(1).map(|x| x.as_str().to_string()).unwrap();
-                return Some(Item::File(s));
+                return Some(ParsedItem::File(s));
             }
 
             // --- Page NNN ---
@@ -57,25 +51,24 @@ pub fn parse_goodreader_annotations(annotations: &str) -> Vec<Item> {
                         s.parse::<u32>().unwrap()
                     })
                     .unwrap();
-                return Some(Item::Page(n));
+                return Some(ParsedItem::Page(n));
             }
 
             // Highlight:
             // Highlighted Text
             if let Some(_) = highlight_rx.find(line) {
-                token = Some(Token::Highlight);
+                token = Some(ParsedToken::Highlight);
                 return None;
             }
             // Underline:
             // Underlined Text
             if let Some(_) = underline_rx.find(line) {
-                token = Some(Token::Underline);
+                token = Some(ParsedToken::Underline);
                 return None;
             }
             None
         })
-        .collect();
-    items
+        .collect()
 }
 
 #[cfg(test)]
@@ -88,7 +81,7 @@ mod tests {
 File: Hello_World.pdf
 "#;
         let items = parse_goodreader_annotations(annotations);
-        assert_eq!(Item::File("Hello_World.pdf".to_string()), items[0]);
+        assert_eq!(ParsedItem::File("Hello_World.pdf".to_string()), items[0]);
     }
 
     #[test]
@@ -99,7 +92,7 @@ File: Hello_World.pdf
 -- Page 45 ---
 "#;
         let items = parse_goodreader_annotations(annotations);
-        assert_eq!(items, vec![Item::Page(45), Item::Page(22)])
+        assert_eq!(items, vec![ParsedItem::Page(45), ParsedItem::Page(22)])
     }
 
     #[test]
@@ -111,7 +104,9 @@ Practical: A Simple Database
         let items = parse_goodreader_annotations(annotations);
         assert_eq!(
             items,
-            vec![Item::Highlight("Practical: A Simple Database".to_string())]
+            vec![ParsedItem::Highlight(
+                "Practical: A Simple Database".to_string()
+            )]
         )
     }
 
@@ -124,7 +119,9 @@ Practical: A Simple Database
         let items = parse_goodreader_annotations(annotations);
         assert_eq!(
             items,
-            vec![Item::Highlight("Practical: A Simple Database".to_string())],
+            vec![ParsedItem::Highlight(
+                "Practical: A Simple Database".to_string()
+            )],
         )
     }
 
@@ -137,7 +134,7 @@ Underline:
         let items = parse_goodreader_annotations(annotations);
         assert_eq!(
             items,
-            vec![Item::Underline(
+            vec![ParsedItem::Underline(
                 "`(equal (getf cd ,field) ,value)".to_string()
             )],
         )
@@ -152,7 +149,7 @@ Underline: (color #6F77FF):
         let items = parse_goodreader_annotations(annotations);
         assert_eq!(
             items,
-            vec![Item::Underline(
+            vec![ParsedItem::Underline(
                 "`(equal (getf cd ,field) ,value)".to_string()
             )],
         );
@@ -195,19 +192,19 @@ global variable, *db*, which you can define with the DEFVAR macro
         assert_eq!(
             items,
             vec![
-                Item::File("Practical_Common_Lisp.pdf".to_string()),
-                Item::Page(45),
-                Item::Highlight("Practical: A Simple Database".to_string()),
-                Item::Page(46),
-                Item::Underline("property list, or plist".to_string()),
-                Item::Underline("(list :a 1 :b 2 :c 3)".to_string()),
-                Item::Underline(
+                ParsedItem::File("Practical_Common_Lisp.pdf".to_string()),
+                ParsedItem::Page(45),
+                ParsedItem::Highlight("Practical: A Simple Database".to_string()),
+                ParsedItem::Page(46),
+                ParsedItem::Underline("property list, or plist".to_string()),
+                ParsedItem::Underline("(list :a 1 :b 2 :c 3)".to_string()),
+                ParsedItem::Underline(
                     "GETF, which takes a plist and a symbol and returns the value in the plist"
                         .to_string()
                 ),
-                Item::Underline("(getf (list :a 1 :b 2 :c 3) :a)".to_string()),
-                Item::Page(47),
-                Item::Underline(
+                ParsedItem::Underline("(getf (list :a 1 :b 2 :c 3) :a)".to_string()),
+                ParsedItem::Page(47),
+                ParsedItem::Underline(
                     "global variable, *db*, which you can define with the DEFVAR macro".to_string()
                 )
             ]
