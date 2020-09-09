@@ -1,28 +1,48 @@
 use crate::core::ParsedItem;
-use chrono::Utc;
 
-pub fn render_md(items: Vec<ParsedItem>) -> String {
+pub fn render_md(items: Vec<ParsedItem>, date_time: String) -> String {
     let mut file = "";
-    let content = items.iter().fold("".to_string(), |acc, x| match x {
-        ParsedItem::File(x) => {
-            file = x;
-            format!("{}# {}\n", acc, file)
-        }
-        ParsedItem::Page(page_num) => format!("{}\n_Page {:04}_\n\n", acc, page_num),
-        ParsedItem::Highlight(highlighted) => format!("{}## {}\n", acc, highlighted),
-        ParsedItem::Underline(underlined) => format!("{}- {}\n", acc, underlined),
-    });
+    let mut previous_item: ParsedItem = ParsedItem::Page(0);
 
-    let now = Utc::now();
-    let date_str = now.format("%c").to_string();
+    let content = items.iter().fold("".to_string(), |acc, x| {
+        let result = match x {
+            ParsedItem::File(f) => {
+                file = f;
+                format!("{}# {}\n", acc, f)
+            }
+            ParsedItem::Page(page_num) => {
+                let leading_new_lines = match &previous_item {
+                    ParsedItem::File(_) | ParsedItem::Highlight(_) => "\n".to_string(),
+                    _ => "\n\n".to_string(),
+                };
+                // github ignores the float style which (align right isa ll we can do)
+                // however if viewed in other viewers it has the desired effect
+                format!(
+                    "{}{}<p align='right' style=\"float: right;\"><i>Page {}</i></p>\n",
+                    acc, leading_new_lines, page_num
+                )
+            }
+            ParsedItem::Highlight(highlighted) => {
+                let leading_new_lines = match &previous_item {
+                    ParsedItem::Page(_) => "\n",
+                    _ => "\n\n",
+                };
+                format!("{}{}## {}\n", acc, leading_new_lines, highlighted)
+            }
+            ParsedItem::Underline(underlined) => format!("{}\n- {}", acc, underlined),
+        };
+
+        previous_item = x.clone();
+        result
+    });
 
     let meta = format!(
         r#"---
-file:    {} 
-date:    {} 
-created: [pdf-annotations-converter](https://github.com/thlorenz/pdf-annotations-converter)
+file:    {}
+date:    {}
+created with: https://github.com/thlorenz/pdf-annotations-converter
 ---"#,
-        file, date_str
+        file, date_time
     );
 
     format!("{}\n\n{}", meta, content)
@@ -40,25 +60,22 @@ mod tests {
             ParsedItem::Page(46),
             ParsedItem::Underline("property list, or plist".to_string()),
         ];
-        let s = render_md(items);
-        print!("{}", s);
+        let s = render_md(items, "date_time".to_string());
         let md = r#"---
 file:    Practical_Common_Lisp.pdf
-date:    Wed Sep  9 04:55:45 2020
-created: [pdf-annotations-converter](https://github.com/thlorenz/pdf-annotations-converter)
+date:    date_time
+created with: https://github.com/thlorenz/pdf-annotations-converter
 ---
 
 # Practical_Common_Lisp.pdf
 
-_Page 0045_
+<p align='right' style="float: right;"><i>Page 45</i></p>
 
 ## Practical: A Simple Database
 
-_Page 0046_
+<p align='right' style="float: right;"><i>Page 46</i></p>
 
-- property list, or plist
-list
-"#;
+- property list, or plist"#;
         assert_eq!(s, md)
     }
 }

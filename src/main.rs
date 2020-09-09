@@ -1,3 +1,4 @@
+use chrono::Utc;
 use std::io::{self, Read};
 
 use pdf_annotations_converter::{
@@ -8,7 +9,11 @@ fn main() -> io::Result<()> {
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)?;
     let parsed_items = parse_goodreader_annotations(&buffer);
-    let md = render_md(parsed_items);
+
+    let now = Utc::now();
+    let date_str = now.format("%c").to_string();
+
+    let md = render_md(parsed_items, date_str);
     println!("{}", md);
     Ok(())
 }
