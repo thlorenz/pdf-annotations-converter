@@ -55,7 +55,8 @@ pub fn parse_goodreader_annotations(annotations: &str, config: &ParseConfig) -> 
                             s.parse::<u32>().unwrap()
                         })
                         .unwrap();
-                    return Some(ParsedItem::Page(n + config.page_offset));
+                    assert!(n >= config.page_offset);
+                    return Some(ParsedItem::Page(n - config.page_offset));
                 }
             }
 
@@ -238,9 +239,9 @@ global variable, *db*, which you can define with the DEFVAR macro
             items,
             vec![
                 ParsedItem::File("Practical_Common_Lisp.pdf".to_string()),
-                ParsedItem::Page(55),
+                ParsedItem::Page(35),
                 ParsedItem::Highlight("Practical: A Simple Database".to_string()),
-                ParsedItem::Page(56),
+                ParsedItem::Page(36),
                 ParsedItem::Underline("property list, or plist".to_string()),
                 ParsedItem::Underline("(list :a 1 :b 2 :c 3)".to_string()),
                 ParsedItem::Underline(
@@ -248,7 +249,7 @@ global variable, *db*, which you can define with the DEFVAR macro
                         .to_string()
                 ),
                 ParsedItem::Underline("(getf (list :a 1 :b 2 :c 3) :a)".to_string()),
-                ParsedItem::Page(57),
+                ParsedItem::Page(37),
                 ParsedItem::Underline(
                     "global variable, *db*, which you can define with the DEFVAR macro".to_string()
                 )
