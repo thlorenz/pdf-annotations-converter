@@ -2,6 +2,19 @@
 
 Converts annotations found in PDF files to different formats.
 
+```sh
+USAGE:
+    cat annotations.txt > pdf-annotations-converter [OPTIONS] > notes.md
+
+FLAGS:
+    -h, --help       Prints help information
+    -n, --numbers    Flag specifying if page numbers should be included
+    -V, --version    Prints version information
+
+OPTIONS:
+    -p, --page-offset <Page Offset>    Offset of first numbered page (see --numbers flag) [default: 0]
+```
+
 ## Supported Annotations
 
 At this point annotations generated with [GoodReader](https://goodreader.com/) are supported.
