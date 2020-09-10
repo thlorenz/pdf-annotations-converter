@@ -7,7 +7,7 @@ enum ParsedToken {
     Underline,
 }
 
-pub fn parse_goodreader_annotations(annotations: &str) -> Vec<ParsedItem> {
+pub fn parse_goodreader_annotations(annotations: &str, page_offset: u32) -> Vec<ParsedItem> {
     let file_rx = Regex::new(r"^File: (.+)").unwrap();
     let page_rx = Regex::new(r"^--- Page (\d+) ---").unwrap();
     let highlight_rx = Regex::new(r"^Highlight( \([^)]+\))?:").unwrap();
@@ -51,7 +51,7 @@ pub fn parse_goodreader_annotations(annotations: &str) -> Vec<ParsedItem> {
                         s.parse::<u32>().unwrap()
                     })
                     .unwrap();
-                return Some(ParsedItem::Page(n));
+                return Some(ParsedItem::Page(n + page_offset));
             }
 
             // Highlight:
@@ -80,7 +80,7 @@ mod tests {
         let annotations = r#"
 File: Hello_World.pdf
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(ParsedItem::File("Hello_World.pdf".to_string()), items[0]);
     }
 
@@ -91,7 +91,7 @@ File: Hello_World.pdf
 --- Page 22 ---
 -- Page 45 ---
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(items, vec![ParsedItem::Page(45), ParsedItem::Page(22)])
     }
 
@@ -101,7 +101,7 @@ File: Hello_World.pdf
 Highlight:
 Practical: A Simple Database
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(
             items,
             vec![ParsedItem::Highlight(
@@ -116,7 +116,7 @@ Practical: A Simple Database
 Highlight (blue):
 Practical: A Simple Database
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(
             items,
             vec![ParsedItem::Highlight(
@@ -131,7 +131,7 @@ Practical: A Simple Database
 Underline:
 `(equal (getf cd ,field) ,value)
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(
             items,
             vec![ParsedItem::Underline(
@@ -146,7 +146,7 @@ Underline:
 Underline: (color #6F77FF):
 `(equal (getf cd ,field) ,value)
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(
             items,
             vec![ParsedItem::Underline(
@@ -188,7 +188,7 @@ Underline:
 Underline:
 global variable, *db*, which you can define with the DEFVAR macro
 "#;
-        let items = parse_goodreader_annotations(annotations);
+        let items = parse_goodreader_annotations(annotations, 0);
         assert_eq!(
             items,
             vec![
