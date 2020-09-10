@@ -5,7 +5,7 @@ version = "0.1.1"
 authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
 repository = "https://github.com/thlorenz/pdf-annotations-converter"
 readme = "README.md"
-exclude = [".github/**/*"]
+exclude = [".github/**/*", "release.toml"]
 edition = "2018"
 license = "MIT"
 
