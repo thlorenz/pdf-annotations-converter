@@ -1,5 +1,8 @@
 use crate::core::ParsedItem;
 
+/// Renders the provided [`ParsedItem`]s into a Markdown document.
+/// The date_time [`String`] can be in any format and will be included in the metadata in order to
+/// indicate when the document was created.
 pub fn render_md(items: Vec<ParsedItem>, date_time: String) -> String {
     let mut file = "";
     let mut previous_item: ParsedItem = ParsedItem::Page(0);

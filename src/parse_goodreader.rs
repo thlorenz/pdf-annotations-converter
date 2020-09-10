@@ -7,6 +7,9 @@ enum ParsedToken {
     Underline,
 }
 
+/// Parses the provided GoodReader annotations emitting a [`ParsedItem`] for each identified
+/// annotation and page number indicators if so desired.
+/// Use the [`ParseConfig`] to configure if page numbers should be included, etc.
 pub fn parse_goodreader_annotations(annotations: &str, config: &ParseConfig) -> Vec<ParsedItem> {
     let file_rx = Regex::new(r"^File: (.+)").unwrap();
     let page_rx = Regex::new(r"^--- Page (\d+) ---").unwrap();
