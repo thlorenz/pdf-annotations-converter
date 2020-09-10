@@ -4,7 +4,7 @@ Converts annotations found in PDF files to different formats.
 
 ```sh
 USAGE:
-    cat annotations.txt > pdf-annotations-converter [OPTIONS] > notes.md
+    cat annotations.txt | pdf-annotations-converter [OPTIONS] > notes.md
 
 FLAGS:
     -h, --help       Prints help information
