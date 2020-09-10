@@ -3,6 +3,9 @@ name = "pdf-annotations-converter"
 description = "Converts annotations found in PDF files to different formats."
 version = "0.1.0"
 authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
+repository = "https://github.com/thlorenz/pdf-annotations-converter"
+readme = "README.md"
+exclude = [".github/**/*"]
 edition = "2018"
 license = "MIT"
 
