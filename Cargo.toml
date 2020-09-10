@@ -1,7 +1,7 @@
 [package]
 name = "pdf-annotations-converter"
 description = "Converts annotations found in PDF files to different formats."
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Thorsten Lorenz <thlorenz@gmx.de>"]
 repository = "https://github.com/thlorenz/pdf-annotations-converter"
 readme = "README.md"
