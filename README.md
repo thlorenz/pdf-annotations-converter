@@ -15,6 +15,12 @@ OPTIONS:
     -p, --page-offset <Page Offset>    Offset of first numbered page (see --numbers flag) [default: 0]
 ```
 
+## Installation
+
+```sh
+cargo install pdf-annotations-converter
+```
+
 ## Supported Annotations
 
 At this point annotations generated with [GoodReader](https://goodreader.com/) are supported.
@@ -28,6 +34,10 @@ Notes.
 ## Supported Renderers
 
 At this point rendering to markdown is supported.
+
+## Documentation
+
+- [crates.io documentation](https://crates.io/crates/pdf-annotations-converter)
 
 ## License
 
