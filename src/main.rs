@@ -23,7 +23,7 @@ fn main() -> io::Result<()> {
     let matches = App::new("pdf-annotations-converter")
         .version("0.1.0")
         .about("Converts annotations found in PDF files to different formats")
-        .usage("cat annotations.txt > pdf-annotations-converter [OPTIONS] > notes.md")
+        .usage("cat annotations.txt | pdf-annotations-converter [OPTIONS] > notes.md")
         .arg(
             Arg::with_name("page offset")
                 .short("p")
