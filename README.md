@@ -1,4 +1,4 @@
-# pdf-annotations-converter [![](https://github.com/thlorenz/pdf-annotations-converter/workflows/Node%20CI/badge.svg?branch=master)](https://github.com/thlorenz/pdf-annotations-converter/actions)
+# pdf-annotations-converter [![](https://github.com/thlorenz/pdf-annotations-converter/workflows/Rust/badge.svg?branch=master)](https://github.com/thlorenz/pdf-annotations-converter/actions)
 
 Converts annotations found in PDF files to different formats.
 
