@@ -25,12 +25,18 @@ fn main() -> io::Result<()> {
         .about("Converts annotations found in PDF files to different formats")
         .usage("cat annotations.txt | pdf-annotations-converter [OPTIONS] > notes.md")
         .arg(
-            Arg::with_name("page offset")
-                .short("p")
-                .long("page-offset")
-                .value_name("Page Offset")
-                .default_value("0")
-                .help("Offset of first numbered page (see --numbers flag)"),
+            Arg::with_name("add offset")
+                .short("a")
+                .long("add-offset")
+                .value_name("add offset")
+                .help("Added to annotated page numbers to obtain physical page"),
+        )
+        .arg(
+            Arg::with_name("sub offset")
+                .short("s")
+                .long("sub-offset")
+                .value_name("sub offset")
+                .help("Subtracted from annotated physical page to obtain page number"),
         )
         .arg(
             Arg::with_name("page numbers")
@@ -38,12 +44,43 @@ fn main() -> io::Result<()> {
                 .long("--numbers")
                 .help("Flag specifying if page numbers should be included"),
         )
+        .after_help(
+            r#"
+Physical pages don't usually match page numbers. Therefore you can optionally provide an offset to
+derive one from the other.
+
+First determine the page offset which is the physical page on which page number `1` appears.
+
+Then provide this offset via `--add-offset` if the annotations include the actual page number or via
+`--sub-offset` if the annotations include the physical page.
+        "#,
+        )
         .get_matches();
 
-    let page_offset = matches.value_of("page offset").unwrap();
-    let page_offset = page_offset
-        .parse::<u32>()
-        .expect(&format!("Invalid page offset {}", page_offset));
+    // We upport two ways to supply a page offset, mainly because we cannot pass a negative value,
+    // i.e. -10 as that is interpreted as a flag instead
+    if matches.is_present("add offset") && matches.is_present("sub offset") {
+        panic!(
+            r#"Only 
+    --add-offset (when physical page numbers are annotated) or
+    --sub-offset (when actual page numbers are annotated) can be provided
+    "#
+        );
+    }
+
+    let page_offset: i32 = if matches.is_present("add offset") {
+        let add_offset = matches.value_of("add offset").unwrap();
+        add_offset
+            .parse::<u16>()
+            .expect(&format!("Invalid add offset {}", add_offset)) as i32
+    } else if matches.is_present("sub offset") {
+        let sub_offset = matches.value_of("sub offset").unwrap();
+        -(sub_offset
+            .parse::<u16>()
+            .expect(&format!("Invalid sub offset {}", sub_offset)) as i32)
+    } else {
+        0
+    };
 
     let page_numbers = matches.is_present("page numbers");
     let parse_config = ParseConfig {

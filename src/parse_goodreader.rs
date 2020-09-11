@@ -12,9 +12,10 @@ enum ParsedToken {
 /// Use the [`ParseConfig`] to configure if page numbers should be included, etc.
 pub fn parse_goodreader_annotations(annotations: &str, config: &ParseConfig) -> Vec<ParsedItem> {
     let file_rx = Regex::new(r"^File: (.+)").unwrap();
-    let page_rx = Regex::new(r"^--- Page (\d+) ---").unwrap();
+    let page_roman_rx = Regex::new(r"^--- Page ([mdclxvi]+) ---").unwrap();
+    let page_number_rx = Regex::new(r"^--- Page (\d+) ---").unwrap();
     let highlight_rx = Regex::new(r"^Highlight( \([^)]+\))?:").unwrap();
-    let underline_rx = Regex::new(r"^Underline( \([^)]+\))?:").unwrap();
+    let underline_rx = Regex::new(r"(?i)^(Squiggly )?Underline( \([^)]+\))?:").unwrap();
 
     let lines = annotations.lines().filter(|&x| x.len() > 0);
 
@@ -46,8 +47,8 @@ pub fn parse_goodreader_annotations(annotations: &str, config: &ParseConfig) -> 
 
             // --- Page NNN ---
             if config.page_numbers {
-                if let Some(_) = page_rx.find(line) {
-                    let c = page_rx.captures(line).unwrap();
+                if let Some(_) = page_number_rx.find(line) {
+                    let c = page_number_rx.captures(line).unwrap();
                     let n: u32 = c
                         .get(1)
                         .map(|x| {
@@ -55,8 +56,27 @@ pub fn parse_goodreader_annotations(annotations: &str, config: &ParseConfig) -> 
                             s.parse::<u32>().unwrap()
                         })
                         .unwrap();
-                    assert!(n >= config.page_offset);
-                    return Some(ParsedItem::Page(n - config.page_offset));
+                    return match config.page_offset {
+                        // physical page is annotated, thus page offset is negative if set
+                        offset if offset < 0 => { 
+                            assert!(n as i32 > offset, format!("negative page offset {} seems to small, encountered physical page {}", offset, n));
+                            Some(ParsedItem::PageNumber((n as i32 + offset) as u32, n))
+                        }
+                        // page number is annotated, page offset is positive if set
+                        offset if offset > 0 => Some(ParsedItem::PageNumber(n, n + offset as u32)),
+                        // page offset not set, i.e. is 0
+                        _ =>Some(ParsedItem::PageNumber(n, n)), 
+                    };
+                }
+                if let Some(_) = page_roman_rx.find(line) {
+                    let c = page_roman_rx.captures(line).unwrap();
+                    let s: String = c
+                        .get(1)
+                        .map(|x| {
+                            x.as_str().to_string()
+                        })
+                        .unwrap();
+                    return Some(ParsedItem::PageRoman(s))
                 }
             }
 
@@ -107,7 +127,73 @@ File: Hello_World.pdf
 -- Page 45 ---
 "#;
         let items = parse_goodreader_annotations(annotations, &WITH_PAGE_NUMBERS);
-        assert_eq!(items, vec![ParsedItem::Page(45), ParsedItem::Page(22)])
+        assert_eq!(
+            items,
+            vec![
+                ParsedItem::PageNumber(45, 45),
+                ParsedItem::PageNumber(22, 22)
+            ]
+        )
+    }
+
+    #[test]
+    fn parsing_page_indicator_with_positive_page_offset() {
+        let annotations = r#"
+--- Page 45 ---
+--- Page 22 ---
+"#;
+        let items = parse_goodreader_annotations(
+            annotations,
+            &ParseConfig {
+                page_offset: 3,
+                page_numbers: true,
+            },
+        );
+        assert_eq!(
+            items,
+            vec![
+                ParsedItem::PageNumber(45, 48),
+                ParsedItem::PageNumber(22, 25)
+            ]
+        )
+    }
+
+    #[test]
+    fn parsing_page_roman_indicator() {
+        let annotations = r#"
+--- Page xxxviii ---
+--- Page xxxix ---
+"#;
+        let items = parse_goodreader_annotations(annotations, &WITH_PAGE_NUMBERS);
+        assert_eq!(
+            items,
+            vec![
+                ParsedItem::PageRoman("xxxviii".to_string()),
+                ParsedItem::PageRoman("xxxix".to_string())
+            ]
+        )
+    }
+
+    #[test]
+    fn parsing_page_indicator_with_negative_page_offset() {
+        let annotations = r#"
+--- Page 45 ---
+--- Page 22 ---
+"#;
+        let items = parse_goodreader_annotations(
+            annotations,
+            &ParseConfig {
+                page_offset: -3,
+                page_numbers: true,
+            },
+        );
+        assert_eq!(
+            items,
+            vec![
+                ParsedItem::PageNumber(42, 45),
+                ParsedItem::PageNumber(19, 22)
+            ]
+        )
     }
 
     #[test]
@@ -208,9 +294,9 @@ global variable, *db*, which you can define with the DEFVAR macro
             items,
             vec![
                 ParsedItem::File("Practical_Common_Lisp.pdf".to_string()),
-                ParsedItem::Page(45),
+                ParsedItem::PageNumber(45, 45),
                 ParsedItem::Highlight("Practical: A Simple Database".to_string()),
-                ParsedItem::Page(46),
+                ParsedItem::PageNumber(46, 46),
                 ParsedItem::Underline("property list, or plist".to_string()),
                 ParsedItem::Underline("(list :a 1 :b 2 :c 3)".to_string()),
                 ParsedItem::Underline(
@@ -218,7 +304,7 @@ global variable, *db*, which you can define with the DEFVAR macro
                         .to_string()
                 ),
                 ParsedItem::Underline("(getf (list :a 1 :b 2 :c 3) :a)".to_string()),
-                ParsedItem::Page(47),
+                ParsedItem::PageNumber(47, 47),
                 ParsedItem::Underline(
                     "global variable, *db*, which you can define with the DEFVAR macro".to_string()
                 )
@@ -239,9 +325,9 @@ global variable, *db*, which you can define with the DEFVAR macro
             items,
             vec![
                 ParsedItem::File("Practical_Common_Lisp.pdf".to_string()),
-                ParsedItem::Page(35),
+                ParsedItem::PageNumber(45, 55),
                 ParsedItem::Highlight("Practical: A Simple Database".to_string()),
-                ParsedItem::Page(36),
+                ParsedItem::PageNumber(46, 56),
                 ParsedItem::Underline("property list, or plist".to_string()),
                 ParsedItem::Underline("(list :a 1 :b 2 :c 3)".to_string()),
                 ParsedItem::Underline(
@@ -249,7 +335,7 @@ global variable, *db*, which you can define with the DEFVAR macro
                         .to_string()
                 ),
                 ParsedItem::Underline("(getf (list :a 1 :b 2 :c 3) :a)".to_string()),
-                ParsedItem::Page(37),
+                ParsedItem::PageNumber(47, 57),
                 ParsedItem::Underline(
                     "global variable, *db*, which you can define with the DEFVAR macro".to_string()
                 )

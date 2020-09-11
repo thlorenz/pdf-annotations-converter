@@ -2,7 +2,7 @@
 
 Converts annotations found in PDF files to different formats.
 
-```sh
+```
 USAGE:
     cat annotations.txt | pdf-annotations-converter [OPTIONS] > notes.md
 
@@ -12,7 +12,17 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -p, --page-offset <Page Offset>    Offset of first numbered page (see --numbers flag) [default: 0]
+    -a, --add-offset <add offset>    Added to annotated page numbers to obtain physical page
+    -s, --sub-offset <sub offset>    Subtracted from annotated physical page to obtain page number
+
+
+Physical pages don't usually match page numbers. Therefore you can optionally provide an offset to
+derive one from the other.
+
+First determine the page offset which is the physical page on which page number `1` appears.
+
+Then provide this offset via `--add-offset` if the annotations include the actual page number or via
+`--sub-offset` if the annotations include the physical page.
 ```
 
 ## Installation
